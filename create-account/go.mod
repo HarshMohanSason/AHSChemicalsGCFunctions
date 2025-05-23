@@ -1,6 +1,6 @@
-module github.com/HarshMohanSason/AHSChemicalsGCFunctions/create-account
+module createaccount
 
-go 1.24.2
+go 1.23
 
 require firebase.google.com/go/v4 v4.15.2
 
