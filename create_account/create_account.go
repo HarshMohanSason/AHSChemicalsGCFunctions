@@ -1,23 +1,37 @@
-package createaccount
+package function
 
 import (
 	"encoding/json"
-	"firebase.google.com/go/v4/auth"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"shared"
+
+	"firebase.google.com/go/v4/auth"
+	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/HarshMohanSason/AHSChemicalsGCShared/shared"
 )
 
+func init(){
+	shared.InitFirebaseProd(nil)
+	functions.HTTP("create-account", CreateAccount)
+}
+
 func CreateAccount(response http.ResponseWriter, request *http.Request) {
+
 	ctx := request.Context()
 
-	if shared.HandleCors(response, request) {
+	if request.Method != http.MethodPost{
+		http.Error(response, "Wrong http method", http.StatusMethodNotAllowed)
+		return
+	}	
+	//CORS 
+	if shared.CorsEnabledFunction(response, request){
 		return
 	}
 
-	//Handle the Auth for the request now
+	//Check if the current user is an admin or not
 	err := shared.IsAuthorized(request)
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusUnauthorized)
@@ -32,10 +46,16 @@ func CreateAccount(response http.ResponseWriter, request *http.Request) {
 	}
 
 	var user map[string]interface{}
-
 	err = json.Unmarshal(bodyBytes, &user)
 	if err != nil {
 		log.Print(err)
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//Filter the data
+	data, err := extractUserData(user)
+	if err != nil{
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -58,15 +78,7 @@ func CreateAccount(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	data := map[string]interface{}{
-		"properties": user["properties"],
-	}
-	if data["properties"] == nil {
-		http.Error(response, "Properties cannot be empty", http.StatusInternalServerError)
-		return
-	}
-
-	//Add the data to firestore
+	//Add properties to firestore
 	_, err = shared.FirestoreClient.Collection("users").Doc(createdUser.UID).Set(ctx, data)
 
 	if err != nil {
@@ -77,4 +89,28 @@ func CreateAccount(response http.ResponseWriter, request *http.Request) {
 
 	response.WriteHeader(http.StatusOK)
 	response.Write([]byte(`{"message":"Account created successfully"}`))
+}
+
+func extractUserData(user map[string]interface{}) (map[string]interface{}, error){
+		
+	if user == nil{
+		return nil, errors.New("User cannot be nil")
+	}
+
+	properties, ok := (user)["properties"].([]interface{})
+	if !ok || len(properties) == 0{
+		return nil, errors.New("Need to have at least one property for the user")
+	}
+
+	brands, ok := (user)["brands"].([]interface{})
+	if !ok || len(brands) == 0{
+		return nil, errors.New("Need to select at least one brand ")
+	}
+
+	data := map[string]interface{}{
+		"properties": properties,
+		"brands": brands,
+	}
+
+	return data, nil
 }
