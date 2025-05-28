@@ -9,8 +9,10 @@ import (
 	"github.com/HarshMohanSason/AHSChemicalsGCShared/shared"
 	"github.com/joho/godotenv"
 )
-func main(){
 
+
+func main(){
+	
 	//Only for local development
 	if os.Getenv("ENV") == "DEBUG"{
 		
@@ -25,9 +27,9 @@ func main(){
 		//Initialize the debug project sdk
 		shared.InitFirebaseDebug(adminSDKFilePath)
 		
-		http.Handle("/fetch-accounts", http.HandlerFunc(function.FetchAccounts))
+		http.Handle("/send-mobile-message", http.HandlerFunc(function.SendMobileMessage))
 			
-		log.Print("fetch-accounts started at: 8080")
+		log.Print("send-mobile-message started at: 8080")
 		err = http.ListenAndServe(":8080", nil)
 		if err != nil{
 			log.Printf("Error occurred when starting the server: %v", err)

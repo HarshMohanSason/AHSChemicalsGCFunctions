@@ -28,7 +28,7 @@ func main(){
 		
 		http.Handle("/create-account", http.HandlerFunc(function.CreateAccount))
 			
-		log.Print("Server Started at: 8080")
+		log.Print("create-account started at: 8080")
 		err = http.ListenAndServe(":8080", nil)
 		if err != nil{
 			log.Printf("Error occurred when starting the server: %v", err)

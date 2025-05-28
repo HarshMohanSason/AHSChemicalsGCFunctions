@@ -15,8 +15,8 @@ func TestCreateAccount(t *testing.T){
 	userTempData := map[string]interface{}{
 		"firstName": "TestFirstName",
 		"lastName": "TestLastName",
-		"properties": []string{}, 
-		"brands": []string{}, 
+		"properties": []string{"2040 N preisker lane"}, 
+		"brands": []string{"Pro blend"}, 
 		"email": "asdsd@gmail.com",
 		"password": "testPass",
 	}
