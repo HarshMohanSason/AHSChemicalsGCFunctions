@@ -29,8 +29,8 @@ func main(){
 		
 		http.Handle("/delete-account", http.HandlerFunc(function.DeleteAccount))
 			
-		log.Print("delete-account started at: 8080")
-		err = http.ListenAndServe(":8080", nil)
+		log.Print("delete-account started at: 3001")
+		err = http.ListenAndServe(":3001", nil)
 		if err != nil{
 			log.Printf("Error occurred when starting the server: %v", err)
 		} 

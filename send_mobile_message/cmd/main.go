@@ -29,8 +29,8 @@ func main(){
 		
 		http.Handle("/send-mobile-message", http.HandlerFunc(function.SendMobileMessage))
 			
-		log.Print("send-mobile-message started at: 8080")
-		err = http.ListenAndServe(":8080", nil)
+		log.Print("send-mobile-message started at: 3006")
+		err = http.ListenAndServe(":3006", nil)
 		if err != nil{
 			log.Printf("Error occurred when starting the server: %v", err)
 		} 

@@ -27,8 +27,8 @@ func main(){
 		
 		http.Handle("/fetch-accounts", http.HandlerFunc(function.FetchAccounts))
 			
-		log.Print("fetch-accounts started at: 8080")
-		err = http.ListenAndServe(":8080", nil)
+		log.Print("fetch-accounts started at: 3004")
+		err = http.ListenAndServe(":3004", nil)
 		if err != nil{
 			log.Printf("Error occurred when starting the server: %v", err)
 		} 

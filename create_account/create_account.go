@@ -87,9 +87,8 @@ func CreateAccount(response http.ResponseWriter, request *http.Request) {
         return
     }
 
-    response.Header().Set("Content-Type", "application/json")
     response.WriteHeader(http.StatusOK)
-    if _, err := response.Write([]byte(`{"message":"Account created successfully"}`)); err != nil {
+    if _, err := response.Write([]byte(`Account Created Successfully!`)); err != nil {
         log.Printf("Response write error: %v", err)
     }
 }

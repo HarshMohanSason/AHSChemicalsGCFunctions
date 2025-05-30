@@ -64,7 +64,7 @@ func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 		http.Error(response, "User Brands cannot be empty", http.StatusBadRequest)
 		return
 	}
-
+	
 	docSnapshot, err := shared.FirestoreClient.Collection("users").Doc(user.UID).Get(ctx)
 	if err != nil {
 		log.Printf("Error fetching documents for uid %v: %v", user.UID, err)

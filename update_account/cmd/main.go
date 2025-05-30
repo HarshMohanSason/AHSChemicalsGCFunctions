@@ -29,8 +29,8 @@ func main(){
 		
 		http.Handle("/update-account", http.HandlerFunc(function.UpdateAccount))
 			
-		log.Print("update-account started at: 8080")
-		err = http.ListenAndServe(":8080", nil)
+		log.Print("update-account started at: 3003")
+		err = http.ListenAndServe(":3003", nil)
 		if err != nil{
 			log.Printf("Error occurred when starting the server: %v", err)
 		} 

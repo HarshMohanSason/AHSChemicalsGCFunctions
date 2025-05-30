@@ -74,8 +74,9 @@ func FetchAccounts(response http.ResponseWriter, request *http.Request){
 			}
 			users = append(users, userMap)
 		}
-	}
-
+	}	
+	
+	response.Header().Set("Content-Type", "application/json")
 	response.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(response).Encode(users)
 	if err != nil {
