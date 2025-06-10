@@ -17,7 +17,7 @@ func init(){
     }
 }
 
-//FetchAccounts only fetches the first 1000 managers accounts. Will update if users increase
+//FetchAccounts only fetches the first 1000 managers accounts. Will add pagination later if the number of users increase
 func FetchAccounts(response http.ResponseWriter, request *http.Request){
 
 	ctx := request.Context()
@@ -40,7 +40,7 @@ func FetchAccounts(response http.ResponseWriter, request *http.Request){
 	}
  
 	iter := shared.AuthClient.Users(ctx, "")
-	users := []map[string]interface{}{}
+	users := []map[string]any{}
 	for {
 		userRecord, err := iter.Next()
 		if userRecord == nil{
@@ -65,7 +65,7 @@ func FetchAccounts(response http.ResponseWriter, request *http.Request){
 			properties:= data["properties"]	
         	brands := data["brands"]
 	
-			userMap := map[string]interface{}{
+			userMap := map[string]any{
 				"uid": userRecord.UserRecord.UserInfo.UID,
 				"displayName": userRecord.UserRecord.UserInfo.DisplayName,
 				"email":  userRecord.UserRecord.UserInfo.Email,

@@ -2,7 +2,6 @@ package function
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -20,8 +19,7 @@ func init(){
 }
 
 type CreateAccountRequest struct {
-    FirstName  	string  	`json:"firstName"`
-    LastName   	string  	`json:"lastName"`
+    Name        string      `json:"name"`
     Email      	string  	`json:"email"`
     Password   	string  	`json:"password"`
     Properties 	[]string	`json:"properties"`
@@ -63,11 +61,10 @@ func CreateAccount(response http.ResponseWriter, request *http.Request) {
         return
     }
 
-    displayName := fmt.Sprintf("%s %s", req.FirstName, req.LastName)
     userToCreate := (&auth.UserToCreate{}).
         Email(req.Email).
         Password(req.Password).
-        DisplayName(displayName)
+        DisplayName(req.Name)
 
     createdUser, err := shared.AuthClient.CreateUser(ctx, userToCreate)
     if err != nil {
@@ -76,7 +73,7 @@ func CreateAccount(response http.ResponseWriter, request *http.Request) {
         return
     }
 
-    data := map[string]interface{}{
+    data := map[string]any{
         "properties": req.Properties,
         "brands":     req.Brands,
     }

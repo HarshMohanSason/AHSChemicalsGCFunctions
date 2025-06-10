@@ -1,41 +1,36 @@
 package tests
 
 import (
-	"bytes"
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
 	function "github.com/HarshMohanSason/AHSChemicalsGCFunctions"
 )
 
 func TestDeleteAccount(t *testing.T) {
     tests := []struct {
         name       string
-        input      map[string]interface{}
+        uid        string
         method     string
         wantStatus int
-        wantBody   string 
     }{
         {
             name: "Valid request",
-            input: map[string]interface{}{
-                "uid": "AValidUIDGoesHere",
-            },
+            uid: "kAmndAeJPmYqZ9B7w95UbKNtKsn1",
             method:     http.MethodDelete,
             wantStatus: http.StatusOK,
         },
         {
             name: "Missing UID",
-            input:      map[string]interface{}{},
+            uid: "",
             method:     http.MethodDelete,
             wantStatus: http.StatusBadRequest,
         },
         {
             name: "Wrong HTTP method",
-            input: map[string]interface{}{
-                "uid": "0Wy5UXyUojQHbt8FnwJycjBiKPZ2",
-            },
+            uid: "kAmndAeJPmYqZ9B7w95UbKNtKsn1",
             method:     http.MethodGet,
             wantStatus: http.StatusMethodNotAllowed,
         },
@@ -43,12 +38,9 @@ func TestDeleteAccount(t *testing.T) {
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            jsonData, err := json.Marshal(tt.input)
-            if err != nil {
-                t.Fatalf("Failed to marshal input: %v", err)
-            }
-
-            req := httptest.NewRequest(tt.method, "/delete-account", bytes.NewReader(jsonData))
+            
+            reqPath := fmt.Sprintf("/delete-account/?uid=%s", tt.uid)
+            req := httptest.NewRequest(tt.method, reqPath, nil)
             res := httptest.NewRecorder()
 
             handler := http.HandlerFunc(function.DeleteAccount)

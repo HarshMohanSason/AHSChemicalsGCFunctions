@@ -21,11 +21,6 @@ func main(){
 		if err != nil{
 			log.Printf("Error occurred loading the env file: %v", err)
 		}
-
-		adminSDKFilePath := os.Getenv("FIREBASE_CREDENTIALS_DEBUG")
-
-		//Initialize the debug project sdk
-		shared.InitFirebaseDebug(adminSDKFilePath)
 		
 		http.Handle("/send-mobile-message", http.HandlerFunc(function.SendMobileMessage))
 			

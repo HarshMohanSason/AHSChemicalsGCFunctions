@@ -1,7 +1,6 @@
 package function
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -9,11 +8,6 @@ import (
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/HarshMohanSason/AHSChemicalsGCShared/shared"
 )
-
-type DeleteAccountRequest struct {
-    UID string 		`json:"uid"`
-}
-
 func init(){
     if os.Getenv("ENV") != "DEBUG"{
        shared.InitFirebaseProd(nil)
@@ -40,26 +34,19 @@ func DeleteAccount(response http.ResponseWriter, request *http.Request) {
 
     defer request.Body.Close()
 
-    var req DeleteAccountRequest
-    if err := json.NewDecoder(request.Body).Decode(&req); err != nil {
-        log.Printf("JSON decode error: %v", err)
-        http.Error(response, "Invalid request body", http.StatusBadRequest)
+    uid := request.URL.Query().Get("uid")
+    if uid == "" {
+        http.Error(response, "Missing uid parameter", http.StatusBadRequest)
         return
     }
 
-    if req.UID == "" {
-        log.Print("UID is missing in the request")
-        http.Error(response, "User ID not provided", http.StatusBadRequest)
-        return
-    }
-
-    if err := shared.AuthClient.DeleteUser(ctx, req.UID); err != nil {
+    if err := shared.AuthClient.DeleteUser(ctx, uid); err != nil {
         log.Printf("Auth delete error: %v", err)
         http.Error(response, "Failed to delete user", http.StatusInternalServerError)
         return
     }
 
-    if _, err := shared.FirestoreClient.Collection("users").Doc(req.UID).Delete(ctx); err != nil {
+    if _, err := shared.FirestoreClient.Collection("users").Doc(uid).Delete(ctx); err != nil {
         log.Printf("Firestore delete error: %v", err)
         http.Error(response, "Failed to delete user", http.StatusInternalServerError)
         return

@@ -18,7 +18,9 @@ type ReceivedData struct{
 }
 
 func init(){
-	functions.HTTP("send-mobile-message", SendMobileMessage)
+	if os.Getenv("ENV") != "DEBUG"{
+		functions.HTTP("send-mobile-message", SendMobileMessage)
+	}
 }
 
 func SendMobileMessage(response http.ResponseWriter, request *http.Request){
@@ -63,7 +65,7 @@ func SendMobileMessage(response http.ResponseWriter, request *http.Request){
 		//Message is sent silently to the admin
 		_, err := client.Api.CreateMessage(params)
 		if err != nil{
-			log.Print("Error sending the message %v", err)
+			log.Printf("Error sending the message %v", err)
 			continue
 		}
 	}

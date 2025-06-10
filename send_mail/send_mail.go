@@ -13,12 +13,9 @@ import (
 )
 
 type EmailMetaData struct{
-	UserEmail	  string     `json:"userEmail"` //User who placed the order
-	UserUID		  string     `json:"userUID"`
-	OrderID 	  string  	 `json:"orderID"`
-	Subject   	  string     `json:"emailSubject"`
-	Content 	  string 	 `json:"emailBody"`
-	Attachments	  []string   `json:"attachments"`
+	Recipients    map[string]string   		`json:"recipients"`
+	Data 		  map[string]any			`json:"data"`
+	TemplateID    string                    `json:"template_id"`
 }
 
 func Init(){
@@ -33,6 +30,11 @@ func SendMail(response http.ResponseWriter, request *http.Request){
 		return
 	}
 
+	if request.Method != http.MethodPost{
+		http.Error(response, "Wrong http method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var emailMetaData EmailMetaData
 	if err:= json.NewDecoder(request.Body).Decode(&emailMetaData); err != nil{
 		log.Printf("Error occured decoding the email: %v", err)
@@ -40,32 +42,36 @@ func SendMail(response http.ResponseWriter, request *http.Request){
 		return
 	}	
 
-	//TODO: Need to set the proper recipents email, set the html content and the attachments
-	from := mail.NewEmail("AHSChemicals", "azurehospitalitysupply.com.")
-	to1 := mail.NewEmail("Recipient One", "recipient1@example.com")
-	to2 := mail.NewEmail("Recipient Two", "recipient2@example.com")
-	to3 := mail.NewEmail("Recipient Two", "recipient2@example.com")
+	from := mail.NewEmail("AHSChemicals", "inbox@azurehospitalitysupply.com")
+
+ 	var recipents []*mail.Email
+ 	for email, name := range emailMetaData.Recipients {
+ 	 	recipents = append(recipents, mail.NewEmail(name, email))
+ 	}	
 
 	// Personalization for the mail
 	p := mail.NewPersonalization()
-	p.AddTos(to1, to2, to3)
-	p.Subject = emailMetaData.Subject
-
+	
+	p.AddTos(recipents...)
+	for key, value := range emailMetaData.Data{
+		p.SetDynamicTemplateData(key, value)
+	}
+	
 	//Create a new mail instance
 	message := mail.NewV3Mail()
 	message.SetFrom(from)
-	message.AddPersonlizations(p)
+	message.AddPersonalizations(p)
 
-	//Add the body content 
-	content := mail.NewContent("text/html", emailMetaData.Content)
-	message.AddContent(content) 
+	//Template ID
+	message.SetTemplateID(emailMetaData.TemplateID)
 
 	//Create a new client
 	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 	_, err := client.Send(message)
 
-
 	if err != nil{
 		log.Printf("Error sending the mail to the recipents %v", err)
 	}
+
+	//Not sending any status, mail is sent silently
 }

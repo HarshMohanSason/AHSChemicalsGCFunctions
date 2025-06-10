@@ -12,18 +12,13 @@ import (
 
 func TestMain(m *testing.M){
 
-	//For some reason go tests run one dir down, so moving up one dir
-	dirPath := "../" 
-	envPath := "../keys/.env"
-	pathToLoad := fmt.Sprintf("%s%s", dirPath, envPath)
-	
-	err := godotenv.Load(pathToLoad)
+	err := godotenv.Load("../../keys/.env")
 	if err != nil{
 		log.Printf("Error occurred loading the env file: %v", err)
 	}
 
-	adminSDKFilePath := fmt.Sprintf("%s%s", dirPath, os.Getenv("FIREBASE_CREDENTIALS_DEBUG"))
-
+	adminSDKFilePath := fmt.Sprintf("../%s", os.Getenv("FIREBASE_CREDENTIALS_DEBUG"))
+	
 	//Initialize the debug project sdk
 	shared.InitFirebaseDebug(adminSDKFilePath)
 
