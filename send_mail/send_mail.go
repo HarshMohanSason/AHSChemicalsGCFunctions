@@ -18,7 +18,7 @@ type EmailMetaData struct{
 	TemplateID    string                    `json:"template_id"`
 }
 
-func Init(){
+func init(){
 	if os.Getenv("ENV") != "DEBUG"{
 		functions.HTTP("send-mail", SendMail)
 	}
@@ -42,7 +42,7 @@ func SendMail(response http.ResponseWriter, request *http.Request){
 		return
 	}	
 
-	from := mail.NewEmail("AHSChemicals", "inbox@azurehospitalitysupply.com")
+	from := mail.NewEmail("AHSChemicals", os.Getenv("SENDGRID_FROM_MAIL"))
 
  	var recipents []*mail.Email
  	for email, name := range emailMetaData.Recipients {

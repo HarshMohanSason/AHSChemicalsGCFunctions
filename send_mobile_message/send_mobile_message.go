@@ -44,7 +44,7 @@ func SendMobileMessage(response http.ResponseWriter, request *http.Request){
 
 	//To phones are a string of multiple numbers separated by a comma
 	recipents := os.Getenv("TWILIO_RECIPENTS_PHONE")	
-	toPhones := strings.Split(recipents, ",")
+	toPhones := strings.Split(recipents, ";")
 	
 	accountSid := os.Getenv("TWILIO_ACCOUNT_SID") 
 	authToken := os.Getenv("TWILIO_AUTH_TOKEN")   
@@ -61,7 +61,7 @@ func SendMobileMessage(response http.ResponseWriter, request *http.Request){
 		params.SetTo(receiverPhone)
 		params.SetFrom(fromPhone)
 		params.SetBody(data.Message)
-			
+		
 		//Message is sent silently to the admin
 		_, err := client.Api.CreateMessage(params)
 		if err != nil{
@@ -69,5 +69,4 @@ func SendMobileMessage(response http.ResponseWriter, request *http.Request){
 			continue
 		}
 	}
-
 }
