@@ -12,66 +12,71 @@ import (
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-type EmailMetaData struct{
-	Recipients    map[string]string   		`json:"recipients"`
-	Data 		  map[string]any			`json:"data"`
-	TemplateID    string                    `json:"template_id"`
+type EmailMetaData struct {
+	Recipients map[string]string `json:"recipients"`
+	Data       map[string]any    `json:"data"`
+	TemplateID string            `json:"template_id"`
 }
 
-func init(){
-	if os.Getenv("ENV") != "DEBUG"{
+func init() {
+	if os.Getenv("ENV") != "DEBUG" {
 		functions.HTTP("send-mail", SendMail)
 	}
 }
 
-func SendMail(response http.ResponseWriter, request *http.Request){
-
-	if shared.CorsEnabledFunction(response, request){
+func SendMail(response http.ResponseWriter, request *http.Request) {
+	if shared.CorsEnabledFunction(response, request) {
 		return
 	}
 
-	if request.Method != http.MethodPost{
-		http.Error(response, "Wrong http method", http.StatusMethodNotAllowed)
+	if request.Method != http.MethodPost {
+		shared.WriteJSONError(response, http.StatusMethodNotAllowed, "Wrong HTTP method, expected POST")
 		return
 	}
 
 	var emailMetaData EmailMetaData
-	if err:= json.NewDecoder(request.Body).Decode(&emailMetaData); err != nil{
-		log.Printf("Error occured decoding the email: %v", err)
-		http.Error(response, "Error in retreving the sent data", http.StatusBadRequest)
+	if err := json.NewDecoder(request.Body).Decode(&emailMetaData); err != nil {
+		log.Printf("Error decoding email metadata: %v", err)
+		shared.WriteJSONError(response, http.StatusBadRequest, "Invalid request body for email metadata")
 		return
-	}	
+	}
 
 	from := mail.NewEmail("AHSChemicals", os.Getenv("SENDGRID_FROM_MAIL"))
 
- 	var recipents []*mail.Email
- 	for email, name := range emailMetaData.Recipients {
- 	 	recipents = append(recipents, mail.NewEmail(name, email))
- 	}	
+	var recipients []*mail.Email
+	for email, name := range emailMetaData.Recipients {
+		recipients = append(recipients, mail.NewEmail(name, email))
+	}
 
-	// Personalization for the mail
+	if len(recipients) == 0 {
+		shared.WriteJSONError(response, http.StatusBadRequest, "At least one recipient is required")
+		return
+	}
+
+	if emailMetaData.TemplateID == "" {
+		shared.WriteJSONError(response, http.StatusBadRequest, "Template ID is required")
+		return
+	}
+
 	p := mail.NewPersonalization()
-	
-	p.AddTos(recipents...)
-	for key, value := range emailMetaData.Data{
+	p.AddTos(recipients...)
+
+	for key, value := range emailMetaData.Data {
 		p.SetDynamicTemplateData(key, value)
 	}
-	
-	//Create a new mail instance
+
 	message := mail.NewV3Mail()
 	message.SetFrom(from)
 	message.AddPersonalizations(p)
-
-	//Template ID
 	message.SetTemplateID(emailMetaData.TemplateID)
 
-	//Create a new client
 	client := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 	_, err := client.Send(message)
-
-	if err != nil{
-		log.Printf("Error sending the mail to the recipents %v", err)
+	if err != nil {
+		log.Printf("Error sending email to recipients %v: %v", recipients, err)
+		shared.WriteJSONError(response, http.StatusInternalServerError, "Failed to send email")
+		return
 	}
 
-	//Not sending any status, mail is sent silently
+	log.Printf("Email sent successfully to %v recipients using template %s", recipients, emailMetaData.TemplateID)
 }

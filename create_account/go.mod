@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	firebase.google.com/go/v4 v4.15.2
 	github.com/GoogleCloudPlatform/functions-framework-go v1.9.2
-	github.com/HarshMohanSason/AHSChemicalsGCShared v1.0.0
+	github.com/HarshMohanSason/AHSChemicalsGCShared v1.8.0
 	github.com/joho/godotenv v1.5.1
 )
 

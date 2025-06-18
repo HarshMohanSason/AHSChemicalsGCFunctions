@@ -3,44 +3,172 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"log"
+
 	function "github.com/HarshMohanSason/AHSChemicalsGCFunctions"
 )
 
-func TestCreateAccount(t *testing.T){
-
-	userTempData := map[string]interface{}{
-		"firstName": "TestFirstName",
-		"lastName": "TestLastName",
-		"properties": []string{"2040 N preisker lane"}, 
-		"brands": []string{"Pro blend"}, 
-		"email": "asdsd@gmail.com",
-		"password": "testPass",
+func TestCreateAccount(t *testing.T) {
+	testCases := []struct {
+		Name           string
+		Input          function.CreateAccountRequest
+		ExpectedStatus int
+	}{
+		{
+			Name: "Valid Request",
+			Input: function.CreateAccountRequest{
+				Name:        "Test User",
+				PhoneNumber: "+11231231211",
+				Email:       "testuser@example.com",
+				Password:    "ValidPass123",
+				Properties: []map[string]string{
+					{
+						"city":   "San Jose",
+						"county": "Santa Clara",
+						"state":  "California",
+						"postal": "95112",
+						"street": "123 Main St",
+					},
+				},
+				Brands: []string{"ProBlend"},
+			},
+			ExpectedStatus: http.StatusOK,
+		},
+		{
+			Name: "Missing Properties Array",
+			Input: function.CreateAccountRequest{
+				Name:        "Test User",
+				PhoneNumber: "+15595484965",
+				Email:       "testuser@example.com",
+				Password:    "ValidPass123",
+				Properties:  []map[string]string{},
+				Brands:      []string{"ProBlend"},
+			},
+			ExpectedStatus: http.StatusBadRequest,
+		},
+		{
+			Name: "Missing Brand Array",
+			Input: function.CreateAccountRequest{
+				Name:        "Test User",
+				PhoneNumber: "+15595484965",
+				Email:       "testuser@example.com",
+				Password:    "ValidPass123",
+				Properties: []map[string]string{
+					{
+						"city":   "San Jose",
+						"county": "Santa Clara",
+						"state":  "California",
+						"postal": "95112",
+						"street": "123 Main St",
+					},
+				},
+				Brands: []string{},
+			},
+			ExpectedStatus: http.StatusBadRequest,
+		},
+		{
+			Name: "Missing Required Property Field (Street)",
+			Input: function.CreateAccountRequest{
+				Name:        "Test User",
+				PhoneNumber: "+15595484965",
+				Email:       "testuser@example.com",
+				Password:    "ValidPass123",
+				Properties: []map[string]string{
+					{
+						"city":   "San Jose",
+						"county": "Santa Clara",
+						"state":  "California",
+						"postal": "95112",
+						// Missing "street"
+					},
+				},
+				Brands: []string{"ProBlend"},
+			},
+			ExpectedStatus: http.StatusBadRequest,
+		},
+		{
+			Name: "Empty Phone Number",
+			Input: function.CreateAccountRequest{
+				Name:        "Test User",
+				PhoneNumber: "",
+				Email:       "testuser@example.com",
+				Password:    "ValidPass123",
+				Properties: []map[string]string{
+					{
+						"city":   "San Jose",
+						"county": "Santa Clara",
+						"state":  "California",
+						"postal": "95112",
+						"street": "123 Main St",
+					},
+				},
+				Brands: []string{"ProBlend"},
+			},
+			ExpectedStatus: http.StatusInternalServerError,
+		},
+		{
+			Name: "Invalid Email Format",
+			Input: function.CreateAccountRequest{
+				Name:        "Test User",
+				PhoneNumber: "+15595484965",
+				Email:       "invalid-email-format",
+				Password:    "ValidPass123",
+				Properties: []map[string]string{
+					{
+						"city":   "San Jose",
+						"county": "Santa Clara",
+						"state":  "California",
+						"postal": "95112",
+						"street": "123 Main St",
+					},
+				},
+				Brands: []string{"ProBlend"},
+			},
+			ExpectedStatus: http.StatusInternalServerError,
+		},
+		{
+			Name: "Weak Password",
+			Input: function.CreateAccountRequest{
+				Name:        "Test User",
+				PhoneNumber: "+15595484965",
+				Email:       "testuser@example.com",
+				Password:    "123",
+				Properties: []map[string]string{
+					{
+						"city":   "San Jose",
+						"county": "Santa Clara",
+						"state":  "California",
+						"postal": "95112",
+						"street": "123 Main St",
+					},
+				},
+				Brands: []string{"ProBlend"},
+			},
+			ExpectedStatus: http.StatusInternalServerError,
+		},
 	}
 
-	//Convert the map to array of bytes
-	jsonData, err := json.Marshal(userTempData)
-	
-	if err != nil{
-		t.Errorf("Error encoding the data: %v", err)
+	//Running the testcases 
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			jsonData, err := json.Marshal(testCase.Input)
+			if err != nil {
+				t.Errorf("Error occurred marshalling the json data %v", err)
+			}
+			req := httptest.NewRequest("POST", "/create-account", bytes.NewReader(jsonData))
+			response := httptest.NewRecorder()
+
+			handler := http.HandlerFunc(function.CreateAccount)
+			handler.ServeHTTP(response, req)
+			body := response.Body
+			if status := response.Code; status != testCase.ExpectedStatus{
+				log.Print(body)
+				t.Errorf("expected status %v, got %v", testCase.ExpectedStatus, status)
+			}
+		})
 	}
-
-	req := httptest.NewRequest("POST", "/create-account", bytes.NewReader(jsonData))
-
-	response := httptest.NewRecorder()
-
-	handler := http.HandlerFunc(function.CreateAccount)
-	handler.ServeHTTP(response, req)
-
-	// Check the status code
-	body := response.Body.String()
-	log.Printf("Response Body: %s", body)
-
-	if status := response.Code; status != http.StatusOK {
-		t.Errorf("expected status %v, got %v", http.StatusOK, status)
-	}
-
 }
+

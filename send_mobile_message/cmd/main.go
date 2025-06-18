@@ -6,7 +6,6 @@ import (
 	"os"
 
 	function "github.com/HarshMohanSason/AHSChemicalsGCFunctions"
-	"github.com/HarshMohanSason/AHSChemicalsGCShared/shared"
 	"github.com/joho/godotenv"
 )
 

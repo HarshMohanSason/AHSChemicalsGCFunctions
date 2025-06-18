@@ -34,12 +34,12 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.50.0/go.mod h1:SZiPHWGOOk3bl8tkevxkoiwPgsIl6CwrWcbwjfHZpdM=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.50.0 h1:ig/FpDD2JofP/NExKQUbn7uOSZzJAQqogfqluZK4ed4=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.50.0/go.mod h1:otE2jQekW/PqXk1Awf5lmfokJx4uwuqcj1ab5SpGeW0=
-github.com/HarshMohanSason/AHSChemicalsGCShared v1.0.0 h1:EgWgZVpEhHeFolg/SiGdLJNRmlynPUTJcMbPUmL3SqU=
-github.com/HarshMohanSason/AHSChemicalsGCShared v1.0.0/go.mod h1:cmT4SX9OXBSrby+cDVoWBjTvIoS6Hm/3CSDXsH1g030=
-github.com/HarshMohanSason/AHSChemicalsGCShared v1.1.0 h1:onCEKJ0qfx9JR65NyPMM9qYgDVdSbJpGxYEnQoC1iVk=
-github.com/HarshMohanSason/AHSChemicalsGCShared v1.1.0/go.mod h1:cmT4SX9OXBSrby+cDVoWBjTvIoS6Hm/3CSDXsH1g030=
 github.com/HarshMohanSason/AHSChemicalsGCShared v1.2.0 h1:vf0zf1zF0qOmMZsF1G9fQK+YeBGmx3EdeH2AcTkpms4=
 github.com/HarshMohanSason/AHSChemicalsGCShared v1.2.0/go.mod h1:cmT4SX9OXBSrby+cDVoWBjTvIoS6Hm/3CSDXsH1g030=
+github.com/HarshMohanSason/AHSChemicalsGCShared v1.7.0 h1:XYB7WCBhHlbuFzKpP57EzWLJejImvgb73XIUotp2oxk=
+github.com/HarshMohanSason/AHSChemicalsGCShared v1.7.0/go.mod h1:cmT4SX9OXBSrby+cDVoWBjTvIoS6Hm/3CSDXsH1g030=
+github.com/HarshMohanSason/AHSChemicalsGCShared v1.8.0 h1:WVz5qPiHxObhFAU28LD2MPCva75675bAeIvuAHvUwNE=
+github.com/HarshMohanSason/AHSChemicalsGCShared v1.8.0/go.mod h1:cmT4SX9OXBSrby+cDVoWBjTvIoS6Hm/3CSDXsH1g030=
 github.com/MicahParks/keyfunc v1.9.0 h1:lhKd5xrFHLNOWrDc4Tyb/Q1AJ4LCzQ48GVJyVIID3+o=
 github.com/MicahParks/keyfunc v1.9.0/go.mod h1:IdnCilugA0O/99dW+/MkvlyrsX8+L8+x95xuVNtM5jw=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=

@@ -13,9 +13,9 @@ import (
 )
 
 type UpdateUserRequest struct {
-	UID        string   `json:"uid"`
-	Brands     []string `json:"brands"`
-	Properties []string `json:"properties"`
+	UID        		string   			`json:"uid"`
+	Brands     		[]string 		 	`json:"brands"`
+	Properties 		[]map[string]any 	`json:"properties"`
 }
 
 func init() {
@@ -24,7 +24,6 @@ func init() {
 		functions.HTTP("update-account", UpdateAccount)
 	}
 }
-
 func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 	ctx := request.Context()
 
@@ -32,14 +31,13 @@ func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	if err := shared.IsAuthorized(request); err != nil{
-		http.Error(response, "Not authorized to do this action", http.StatusUnauthorized)
+	if err := shared.IsAuthorized(request); err != nil {
+		shared.WriteJSONError(response, http.StatusUnauthorized, "Not authorized to do this action")
 		return
 	}
 
 	if request.Method != http.MethodPut {
-		log.Print("Wrong http method, expected method PUT")
-		http.Error(response, "Error occurred, wrong http method", http.StatusMethodNotAllowed)
+		shared.WriteJSONError(response, http.StatusMethodNotAllowed, "Wrong HTTP method, expected PUT")
 		return
 	}
 
@@ -47,34 +45,54 @@ func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 
 	var user UpdateUserRequest
 	if err := json.NewDecoder(request.Body).Decode(&user); err != nil {
-		log.Printf("Error occurred while decoding the body: %v", err)
-		http.Error(response, "Error occurred while fetching the body", http.StatusBadRequest)
+		log.Printf("Error decoding request body: %v", err)
+		shared.WriteJSONError(response, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if user.UID == "" {
-		http.Error(response, "UID is required", http.StatusBadRequest)
+		shared.WriteJSONError(response, http.StatusBadRequest, "UID is required")
 		return
 	}
 	if len(user.Properties) == 0 {
-		http.Error(response, "User Properties cannot be empty", http.StatusBadRequest)
+		shared.WriteJSONError(response, http.StatusBadRequest, "User properties cannot be empty")
 		return
 	}
+
+	for _, property := range user.Properties {
+		if property["city"] == "" {
+			shared.WriteJSONError(response, http.StatusBadRequest, "City is required in one of the properties")
+			return
+		}
+		if property["county"] == "" {
+			shared.WriteJSONError(response, http.StatusBadRequest, "County is required in one of the properties")
+			return
+		}
+		if property["state"] == "" {
+			shared.WriteJSONError(response, http.StatusBadRequest, "State is required in one of the properties")
+			return
+		}
+		if property["postal"] == "" {
+			shared.WriteJSONError(response, http.StatusBadRequest, "Postal code is required in one of the properties")
+			return
+		}
+	}
+
 	if len(user.Brands) == 0 {
-		http.Error(response, "User Brands cannot be empty", http.StatusBadRequest)
+		shared.WriteJSONError(response, http.StatusBadRequest, "User brands cannot be empty")
 		return
 	}
-	
+
 	docSnapshot, err := shared.FirestoreClient.Collection("users").Doc(user.UID).Get(ctx)
 	if err != nil {
-		log.Printf("Error fetching documents for uid %v: %v", user.UID, err)
-		http.Error(response, "No User found", http.StatusBadRequest)
+		log.Printf("Error fetching document for uid %v: %v", user.UID, err)
+		shared.WriteJSONError(response, http.StatusBadRequest, "No user found with the given UID")
 		return
 	}
 
 	currentData := docSnapshot.Data()
-
 	updates := []firestore.Update{}
+
 	if !reflect.DeepEqual(currentData["brands"], user.Brands) {
 		updates = append(updates, firestore.Update{FieldPath: []string{"brands"}, Value: user.Brands})
 	}
@@ -83,22 +101,16 @@ func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 	}
 
 	if len(updates) == 0 {
-		response.WriteHeader(http.StatusOK)
-		_, _ = response.Write([]byte("No changes detected"))
+		shared.WriteJSONSuccess(response, http.StatusOK, "No changes detected", nil)
 		return
 	}
 
 	_, err = shared.FirestoreClient.Collection("users").Doc(user.UID).Update(ctx, updates)
 	if err != nil {
-		log.Print(err)
-		http.Error(response, "Error occurred while updating the user data", http.StatusInternalServerError)
+		log.Printf("Firestore update error: %v", err)
+		shared.WriteJSONError(response, http.StatusInternalServerError, "Error occurred while updating the user data")
 		return
 	}
 
-	response.WriteHeader(http.StatusOK)
-	_, err = response.Write([]byte("Information updated successfully"))
-	if err != nil {
-		log.Print(err)
-		http.Error(response, "Error writing the response,", http.StatusInternalServerError)
-	}
+	shared.WriteJSONSuccess(response, http.StatusOK, "Information updated successfully", nil)
 }

@@ -1,7 +1,6 @@
 package function
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -10,77 +9,74 @@ import (
 	"github.com/HarshMohanSason/AHSChemicalsGCShared/shared"
 )
 
-func init(){
-    if os.Getenv("ENV") != "DEBUG"{
-	   shared.InitFirebaseProd(nil)
-	   functions.HTTP("fetch-accounts", FetchAccounts)
-    }
+func init() {
+	if os.Getenv("ENV") != "DEBUG" {
+		shared.InitFirebaseProd(nil)
+		functions.HTTP("fetch-accounts", FetchAccounts)
+	}
 }
 
-//FetchAccounts only fetches the first 1000 managers accounts. Will add pagination later if the number of users increase
-func FetchAccounts(response http.ResponseWriter, request *http.Request){
-
+// FetchAccounts fetches the first 1000 manager accounts. Will add pagination later if needed.
+func FetchAccounts(response http.ResponseWriter, request *http.Request) {
 	ctx := request.Context()
 
-	if shared.CorsEnabledFunction(response, request){
+	if shared.CorsEnabledFunction(response, request) {
 		return
 	}
 
-	if request.Method != http.MethodGet{
-		log.Print("Wrong http method")
-		http.Error(response, "Wrong http method", http.StatusMethodNotAllowed)
+	if request.Method != http.MethodGet {
+		shared.WriteJSONError(response, http.StatusMethodNotAllowed, "Wrong HTTP method")
 		return
 	}
 
-	err := shared.IsAuthorized(request)
-	if err != nil {
-		log.Print(err.Error())
-		http.Error(response, err.Error(), http.StatusUnauthorized)
+	if err := shared.IsAuthorized(request); err != nil {
+		shared.WriteJSONError(response, http.StatusUnauthorized, err.Error())
 		return
 	}
- 
+
 	iter := shared.AuthClient.Users(ctx, "")
 	users := []map[string]any{}
+
 	for {
 		userRecord, err := iter.Next()
-		if userRecord == nil{
+		if userRecord == nil {
 			break
 		}
-		if err != nil{
-			log.Print(err.Error())
-			http.Error(response, err.Error(), http.StatusInternalServerError)
+		if err != nil {
+			log.Printf("Auth iteration error: %v", err)
+
+			firebaseError := shared.ExtractFirebaseErrorFromResponse(err)
+			if firebaseError != nil {
+				shared.WriteJSONError(response, http.StatusInternalServerError, firebaseError.Error.Message)
+			} else {
+				shared.WriteJSONError(response, http.StatusInternalServerError, err.Error())
+			}
 			return
 		}
-		//Only fetching the managers not the admins since managers do not have any custom claims set
-		if userRecord.CustomClaims == nil{
+
+		// Only fetching customer accounts
+		if userRecord.CustomClaims == nil {
 			docSnapshot, err := shared.FirestoreClient.Collection("users").Doc(userRecord.UserRecord.UserInfo.UID).Get(ctx)
-			
-			if err != nil{
-				log.Print(err.Error())
-				http.Error(response, err.Error(),  http.StatusInternalServerError)
+			if err != nil {
+				log.Printf("Firestore read error: %v", err)
+				shared.WriteJSONError(response, http.StatusInternalServerError, err.Error())
 				return
 			}
-	
+
 			data := docSnapshot.Data()
-			properties:= data["properties"]	
-        	brands := data["brands"]
-	
+			properties := data["properties"]
+			brands := data["brands"]
+
 			userMap := map[string]any{
-				"uid": userRecord.UserRecord.UserInfo.UID,
+				"uid":         userRecord.UserRecord.UserInfo.UID,
 				"displayName": userRecord.UserRecord.UserInfo.DisplayName,
-				"email":  userRecord.UserRecord.UserInfo.Email,
-				"properties": properties, 
-				"brands": brands,
+				"email":       userRecord.UserRecord.UserInfo.Email,
+				"properties":  properties,
+				"brands":      brands,
 			}
 			users = append(users, userMap)
 		}
-	}	
-	
-	response.Header().Set("Content-Type", "application/json")
-	response.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(response).Encode(users)
-	if err != nil {
-		log.Print(err.Error())
-    	http.Error(response, err.Error(), http.StatusInternalServerError)
-    }
+	}
+
+	shared.WriteJSONSuccess(response, http.StatusOK, "Fetched accounts successfully", users)
 }

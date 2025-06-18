@@ -23,12 +23,12 @@ func DeleteAccount(response http.ResponseWriter, request *http.Request) {
     }
 
     if request.Method != http.MethodDelete {
-        http.Error(response, "Wrong HTTP method", http.StatusMethodNotAllowed)
+        shared.WriteJSONError(response, http.StatusMethodNotAllowed, "Wrong HTTP method")
         return
     }
-    
+
     if err := shared.IsAuthorized(request); err != nil {
-        http.Error(response, err.Error(), http.StatusUnauthorized)
+        shared.WriteJSONError(response, http.StatusUnauthorized, err.Error())
         return
     }
 
@@ -36,24 +36,27 @@ func DeleteAccount(response http.ResponseWriter, request *http.Request) {
 
     uid := request.URL.Query().Get("uid")
     if uid == "" {
-        http.Error(response, "Missing uid parameter", http.StatusBadRequest)
+        shared.WriteJSONError(response, http.StatusBadRequest, "Missing uid parameter")
         return
     }
 
     if err := shared.AuthClient.DeleteUser(ctx, uid); err != nil {
         log.Printf("Auth delete error: %v", err)
-        http.Error(response, "Failed to delete user", http.StatusInternalServerError)
+
+        firebaseError := shared.ExtractFirebaseErrorFromResponse(err)
+        if firebaseError.Error.Message != "" {
+            shared.WriteJSONError(response, http.StatusInternalServerError, firebaseError.Error.Message)
+        } else {
+            shared.WriteJSONError(response, http.StatusInternalServerError, err.Error())
+        }
         return
     }
 
     if _, err := shared.FirestoreClient.Collection("users").Doc(uid).Delete(ctx); err != nil {
         log.Printf("Firestore delete error: %v", err)
-        http.Error(response, "Failed to delete user", http.StatusInternalServerError)
+        shared.WriteJSONError(response, http.StatusInternalServerError, err.Error())
         return
     }
 
-    response.WriteHeader(http.StatusOK)
-    if _, err := response.Write([]byte("Account deleted successfully")); err != nil {
-        log.Printf("Response write error: %v", err)
-    }
+    shared.WriteJSONSuccess(response, http.StatusOK, "Account deleted successfully", nil)
 }

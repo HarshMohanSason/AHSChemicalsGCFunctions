@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.9.2
-	github.com/HarshMohanSason/AHSChemicalsGCShared v1.1.0
+	github.com/HarshMohanSason/AHSChemicalsGCShared v1.8.0
 	github.com/joho/godotenv v1.5.1
 	github.com/twilio/twilio-go v1.26.1
 )

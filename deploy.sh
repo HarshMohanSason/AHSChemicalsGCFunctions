@@ -24,8 +24,8 @@ while true; do
     read -p "Enter region (Press enter for default) (default: us-west2): " REGION
     REGION=${REGION:-us-west2}
     
-    read -p "Enter Go runtime  (Press enter for default) (default: go124): " RUNTIME
-    RUNTIME=${RUNTIME:-go124} 
+    read -p "Enter Go runtime  (Press enter for default) (default: go123): " RUNTIME
+    RUNTIME=${RUNTIME:-go123} 
 
     read -p "Enter the env variables with key value pairs, comma separated (Press enter to skip): " ENV_VARIABLE
 
