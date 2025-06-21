@@ -12,37 +12,51 @@ import (
 	"github.com/HarshMohanSason/AHSChemicalsGCShared/shared"
 )
 
+// UpdateUserRequest defines the structure of the incoming JSON request
 type UpdateUserRequest struct {
-	UID        		string   			`json:"uid"`
-	Brands     		[]string 		 	`json:"brands"`
-	Properties 		[]map[string]any 	`json:"properties"`
+	UID        string                `json:"uid"`        // Firebase User ID (required)
+	Brands     []string              `json:"brands"`     // List of brand names associated with the user (required)
+	Properties []map[string]string   `json:"properties"` // List of property objects with fields: street, city, county, state, postal (required)
 }
 
 func init() {
-	if os.Getenv("ENV") != "DEBUG"{
+	// Register the Cloud Function only in production environments
+	if os.Getenv("ENV") != "DEBUG" {
 		shared.InitFirebaseProd(nil)
 		functions.HTTP("update-account", UpdateAccount)
 	}
 }
+
+// UpdateAccount is a Google Cloud Function that updates a user's brands and properties
+// in Firestore if they differ from the existing records.
+//
+// Authorization: Requires Firebase ID token with 'admin' custom claim set to true
+// Method: PUT
+// Request Body: JSON matching UpdateUserRequest structure
+// Response: Success or error message with appropriate HTTP status code
 func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 	ctx := request.Context()
 
+	// Handle CORS and preflight requests
 	if shared.CorsEnabledFunction(response, request) {
 		return
 	}
 
-	if err := shared.IsAuthorized(request); err != nil {
-		shared.WriteJSONError(response, http.StatusUnauthorized, "Not authorized to do this action")
-		return
-	}
-
+	// Only allow PUT method for this function
 	if request.Method != http.MethodPut {
 		shared.WriteJSONError(response, http.StatusMethodNotAllowed, "Wrong HTTP method, expected PUT")
 		return
 	}
 
+	// Ensure that the user is authorized (admin privileges)
+	if err := shared.IsAuthorizedAndAdmin(request); err != nil {
+		shared.WriteJSONError(response, http.StatusUnauthorized, err.Error())
+		return
+	}
+
 	defer request.Body.Close()
 
+	// Decode the incoming JSON payload
 	var user UpdateUserRequest
 	if err := json.NewDecoder(request.Body).Decode(&user); err != nil {
 		log.Printf("Error decoding request body: %v", err)
@@ -50,6 +64,7 @@ func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	// Validate required fields
 	if user.UID == "" {
 		shared.WriteJSONError(response, http.StatusBadRequest, "UID is required")
 		return
@@ -58,7 +73,6 @@ func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 		shared.WriteJSONError(response, http.StatusBadRequest, "User properties cannot be empty")
 		return
 	}
-
 	for _, property := range user.Properties {
 		if property["city"] == "" {
 			shared.WriteJSONError(response, http.StatusBadRequest, "City is required in one of the properties")
@@ -77,12 +91,12 @@ func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 	}
-
 	if len(user.Brands) == 0 {
 		shared.WriteJSONError(response, http.StatusBadRequest, "User brands cannot be empty")
 		return
 	}
 
+	// Fetch current user document from Firestore
 	docSnapshot, err := shared.FirestoreClient.Collection("users").Doc(user.UID).Get(ctx)
 	if err != nil {
 		log.Printf("Error fetching document for uid %v: %v", user.UID, err)
@@ -90,21 +104,29 @@ func UpdateAccount(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	// Prepare update operations by comparing incoming data with current Firestore document
 	currentData := docSnapshot.Data()
 	updates := []firestore.Update{}
 
-	if !reflect.DeepEqual(currentData["brands"], user.Brands) {
+	var firestoreUser UpdateUserRequest
+	// Convert Firestore data to JSON → back to struct for comparison
+	dataBytes, _ := json.Marshal(currentData)
+	json.Unmarshal(dataBytes, &firestoreUser)
+
+	if !reflect.DeepEqual(firestoreUser.Brands, user.Brands) {
 		updates = append(updates, firestore.Update{FieldPath: []string{"brands"}, Value: user.Brands})
 	}
-	if !reflect.DeepEqual(currentData["properties"], user.Properties) {
+	if !reflect.DeepEqual(firestoreUser.Properties, user.Properties) {
 		updates = append(updates, firestore.Update{FieldPath: []string{"properties"}, Value: user.Properties})
 	}
 
+	// If no changes detected, respond with success and exit
 	if len(updates) == 0 {
 		shared.WriteJSONSuccess(response, http.StatusOK, "No changes detected", nil)
 		return
 	}
 
+	// Apply updates to Firestore
 	_, err = shared.FirestoreClient.Collection("users").Doc(user.UID).Update(ctx, updates)
 	if err != nil {
 		log.Printf("Firestore update error: %v", err)

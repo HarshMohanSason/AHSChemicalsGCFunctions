@@ -4,9 +4,14 @@ declare -a ENTRY_POINTS
 declare -a SOURCES 
 declare -a REGIONS 
 declare -a RUNTIMES
-declare -a ENV_VARIABLES
 
 echo "Deploying The Google Cloud Function/(s)"
+
+read -p "Enter the service account for the deploy: " SERVICE_ACCOUNT
+    if [ -z "$SERVICE_ACCOUNT" ]; then
+        echo "Service Account cannot be empty. Exiting..."
+        exit 1
+    fi 
 
 while true; do
     read -p "Enter entry point: " ENTRY_POINT
@@ -27,13 +32,10 @@ while true; do
     read -p "Enter Go runtime  (Press enter for default) (default: go123): " RUNTIME
     RUNTIME=${RUNTIME:-go123} 
 
-    read -p "Enter the env variables with key value pairs, comma separated (Press enter to skip): " ENV_VARIABLE
-
     ENTRY_POINTS+=("$ENTRY_POINT")
     SOURCES+=("$SOURCE")
     REGIONS+=("$REGION")
     RUNTIMES+=("$RUNTIME")
-    ENV_VARIABLES+=("$ENV_VARIABLE")
 
     read -p "Do you want to continue entering functions (Y/N): " ANSWER
     if [[ "$ANSWER" == "Y" || "$ANSWER" == "y" ]]; then
@@ -45,24 +47,16 @@ done
 
 for i in "${!ENTRY_POINTS[@]}"; do
     echo "Deploying '${ENTRY_POINTS[$i]}' to region '${REGIONS[$i]}'..."
-    go env -w GOSUMDB='sum.golang.org'
     
-    CMD="gcloud functions deploy \"${ENTRY_POINTS[$i]}\" \
+    gcloud functions deploy "${ENTRY_POINTS[$i]}"\
       --gen2 \
-      --runtime=\"${RUNTIMES[$i]}\" \
-      --entry-point=\"${ENTRY_POINTS[$i]}\" \
-      --source=\"${SOURCES[$i]}\" \
-      --region=\"${REGIONS[$i]}\" \
+      --service-account="${SERVICE_ACCOUNT}" \
+      --runtime="${RUNTIMES[$i]}" \
+      --entry-point="${ENTRY_POINTS[$i]}" \
+      --source="${SOURCES[$i]}" \
+      --region="${REGIONS[$i]}" \
       --trigger-http \
-      --allow-unauthenticated" 
-
-    #Check if the env variables are not empty
-    if [ -n "${ENV_VARIABLES[$i]}" ]; then
-        CMD="$CMD --set-env-vars=\"${ENV_VARIABLES[$i]}\""
-    fi
-
-    echo "Running the gc deploy command:"
-    eval $CMD
+      --allow-unauthenticated
 
     echo "Deployment complete. "${ENTRY_POINTS[$i]}" has been deployed"
 done
